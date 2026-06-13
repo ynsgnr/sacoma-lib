@@ -42,6 +42,25 @@ def impedance_index(height_cm: float, impedance_ohm: float) -> float:
     return (height_cm * height_cm) / impedance_ohm
 
 
+# --- metrics derived from body-fat % (the BIA hydration / composition model) ------------
+HYDRATION = 0.732   # water fraction of fat-free mass
+
+
+def body_water_percent(body_fat_percent: float) -> float:
+    """Body water % = fat-free mass fraction * hydration constant."""
+    return round1((100.0 - body_fat_percent) * HYDRATION)
+
+
+def muscle_percent(body_fat_percent: float, bone_mass_kg: float, weight_kg: float) -> float:
+    """Muscle % = fat-free mass % minus bone %."""
+    bone_percent = bone_mass_kg / weight_kg * 100.0
+    return round1((100.0 - body_fat_percent) - bone_percent)
+
+
+def fat_mass_kg(body_fat_percent: float, weight_kg: float) -> float:
+    return round1(weight_kg * body_fat_percent / 100.0)
+
+
 def compute(measurement: Measurement, profile: UserProfile) -> BodyComposition:
     """Compute body composition from a measurement + profile.
 

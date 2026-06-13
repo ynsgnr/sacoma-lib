@@ -47,6 +47,21 @@ All reported values are rounded to one decimal (half-up at the second decimal).
 BMI = weight_kg / (height_cm/100)**2 = weight_kg * 10000 / height_cm**2
 ```
 
+## Metrics derived from body-fat %
+
+Most whole-body metrics are transforms of body-fat % via the BIA composition model, so they
+do not need their own impedance regression:
+
+```
+fat_free_fraction = (100 - body_fat_percent)
+body_water_percent = fat_free_fraction * 0.732          # 0.732 = hydration of lean mass
+muscle_percent     = fat_free_fraction - bone_percent   # bone_percent = bone_kg/weight*100
+fat_mass_kg        = weight_kg * body_fat_percent/100
+```
+
+Body-fat % itself is the core impedance regression (segmental impedance terms); bone is its
+own small regression. The rest follow from the relations above.
+
 ## References
 
 - ESPEN BIA guidelines (Kyle et al., 2004).

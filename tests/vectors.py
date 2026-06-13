@@ -17,6 +17,11 @@ class Vector:
     a3_frames: List[bytes]          # raw 20-byte A3 result frames, in order
     weight_kg: float
     impedances_ohm: List[float]
+    # user profile
+    height_cm: float = 165.0
+    age: int = 30
+    sex: int = 1                    # 0 = female, 1 = male
+    people_type: int = 1            # 0 = normal, 1 = athlete
     bmi: Optional[float] = None
     body_fat_percent: Optional[float] = None
     muscle_percent: Optional[float] = None
