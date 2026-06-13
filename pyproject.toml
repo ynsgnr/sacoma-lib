@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sacoma"
+version = "0.1.0"
+description = "Decode/encode BLE packets for the SACOMA Ultra (ICOMON/Fitdays) 8-electrode body-composition scale, and compute body composition (WLA25)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Yunus Gungor" }]
+dependencies = [
+    "ezpacket==0.0.6",
+]
+
+[project.optional-dependencies]
+ble = ["bleak>=0.21"]            # only for the example runner script
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+include = ["sacoma*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
