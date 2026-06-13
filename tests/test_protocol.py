@@ -5,7 +5,7 @@ from sacoma.protocol import FrameAssembler, decode_frame, decode_a3_result, a3_r
 from tests import vectors
 
 
-@pytest.mark.parametrize("vec", vectors.ALL, ids=[v.name for v in vectors.ALL])
+@pytest.mark.parametrize("vec", vectors.CAPTURES, ids=[v.name for v in vectors.CAPTURES])
 def test_reassemble_and_decode_a3(vec):
     assembler = FrameAssembler()
     measurement = None
@@ -20,7 +20,7 @@ def test_reassemble_and_decode_a3(vec):
         assert got == pytest.approx(exp, abs=0.05)
 
 
-@pytest.mark.parametrize("vec", vectors.ALL, ids=[v.name for v in vectors.ALL])
+@pytest.mark.parametrize("vec", vectors.CAPTURES, ids=[v.name for v in vectors.CAPTURES])
 def test_decode_payload_directly(vec):
     # reassemble payload by hand (strip [seq,len,frag] + checksum, concat to length)
     total = vec.a3_frames[0][1]

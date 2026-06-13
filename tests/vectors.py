@@ -14,9 +14,9 @@ def _frame(b: str) -> bytes:
 @dataclass
 class Vector:
     name: str
-    a3_frames: List[bytes]          # raw 20-byte A3 result frames, in order
     weight_kg: float
     impedances_ohm: List[float]
+    a3_frames: Optional[List[bytes]] = None   # raw A3 frames (device captures only)
     # user profile
     height_cm: float = 165.0
     age: int = 30
@@ -82,4 +82,24 @@ EXACT = Vector(
                        8.988052167350006, 9.006102267350006, 23.987975009398394],
 )
 
-ALL = [DISPLAY, EXACT]
+# Additional reference profiles (other heights / sexes / ages) with expected outputs.
+_b = [20.7, 285.4, 280.9, 254.7, 268.5, 14.0, 247.0, 246.2, 224.2, 238.9]
+_hi = [round(z * 1.18, 1) for z in _b]
+
+PROFILES = [
+    Vector("tall_male", 82.0, _b, height_cm=180, age=45, sex=1, people_type=0,
+           bmi=25.3, body_fat_percent=16.8, bone_mass_kg=4.6, body_water_percent=61.1,
+           muscle_percent=77.7),
+    Vector("short_female", 55.0, _b, height_cm=158, age=25, sex=0, people_type=0,
+           bmi=22.0, body_fat_percent=9.3, bone_mass_kg=3.3, body_water_percent=66.5,
+           muscle_percent=84.6),
+    Vector("mid_female", 68.0, _hi, height_cm=170, age=55, sex=0, people_type=1,
+           bmi=23.5, body_fat_percent=17.9, bone_mass_kg=3.7, body_water_percent=60.1,
+           muscle_percent=76.6),
+    Vector("tall_lean", 72.0, _hi, height_cm=185, age=35, sex=1, people_type=1,
+           bmi=21.0, body_fat_percent=10.4, bone_mass_kg=4.3, body_water_percent=65.7,
+           muscle_percent=83.6),
+]
+
+CAPTURES = [DISPLAY, EXACT]   # have raw A3 frames (decode tests)
+ALL = CAPTURES + PROFILES     # all have expected metrics (calculation tests)
