@@ -41,10 +41,29 @@ SCORE_CORR = (-0.958, 0.983)       # DAT_00199ea8, index = (residual < 0)
 
 
 def get_standard_bmi(height, age, sex, people):
-    """ICAlgCommon::getStandardBMI -> reference BMI (float)."""
+    """ICAlgCommon::getStandardBMI -> reference BMI (float).
+
+    For adults (age >= 18) this collapses to a per-sex constant (22 male /
+    21 female), independent of height/people_type.
+
+    UNDER-18 IS NOT IMPLEMENTED (intentionally). In the device library, for
+    age < 18 getStandardBMI is instead a height-indexed decision tree: it keys
+    on ``(int)height - 1`` and returns a hard-coded percentile reference BMI for
+    each ~1 cm bracket (roughly the 85th-percentile growth curve, ~120 branches
+    spanning ~85-171 cm; outside that range it falls back to the adult
+    constant). To add it, transcribe that tree from the decompiled
+    getStandardBMI, or sweep the binary over integer heights and bake a lookup
+    table. Note the same applies to getStandardSMM (its own under-18 height
+    table), though SMM only feeds the reference block we don't compute here.
+
+    Impact of the gap: only minors are affected, and only the metrics that
+    depend on the reference values -- segment percentages and body score (via
+    getStandardFFM/BFM and getScore). The impedance-derived absolute metrics
+    (body fat %, masses, water %, ...) do not use this and would be correct.
+    """
     if age >= 18:
         return 22.0 if sex == 1 else 21.0
-    raise NotImplementedError("under-18 standard-BMI height tree not ported yet")
+    raise NotImplementedError("under-18 standard-BMI height tree not ported (see docstring)")
 
 
 def _std_weight(height, age, sex, people):
