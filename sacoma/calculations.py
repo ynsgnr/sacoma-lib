@@ -19,10 +19,6 @@ from .models import (
 round1 = wla25.ceil
 
 
-def clamp(value: float, low: float, high: float) -> float:
-    return low if value < low else high if value > high else value
-
-
 def body_mass_index(weight_kg: float, height_cm: float) -> float:
     """BMI = weight / height_m**2, rounded the way the device rounds."""
     return round1(weight_kg * 10000.0 / (height_cm * height_cm))

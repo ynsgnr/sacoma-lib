@@ -23,3 +23,11 @@ include = ["sacoma*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint.per-file-ignores]
+# wla25.py is a bit-exact port of the decompiled algorithm; its compact
+# one-line lookup ladders (E701/E702) are deliberate and mirror the original.
+"sacoma/wla25.py" = ["E701", "E702"]

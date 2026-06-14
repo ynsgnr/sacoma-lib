@@ -256,7 +256,8 @@ def calc(weight, height, sex, age, people, imps):
     if iVar8v < 2:
         iVar8v = 1
     dVar28 = dVar26 * 0.733                         # lean * hydration
-    dVar35 = 0.0  # segment-ratio slot (param_1[0x3e]); not a measured headline
+    # note: param_1[0x3e] (a segment-ratio slot) is written 0.0 here in the
+    # original but never read as a headline metric, so it is not ported.
     dVar38 = (dVar34 * -0.0002 + 0.72) * dVar34     # subcutaneous fat %
 
     dVar45 = ((dVar28 + dVar26 * 0.2) / dVar33) * 100.0   # muscle %

@@ -1,5 +1,4 @@
 """Decoder validation against real captured Scale -> App frames (frida-2 / frida-6)."""
-from sacoma import protocol
 from sacoma.protocol import decode_message, decode_a3_result, frame_checksum, frame_is_valid
 
 

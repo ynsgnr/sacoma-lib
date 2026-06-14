@@ -1,34 +1,13 @@
-"""SACOMA Ultra BLE wire protocol — **encode** side (App -> Scale, FFB1 writes).
+"""App -> Scale command frames (FFB1 writes) — the encode counterpart of
+:mod:`sacoma.protocol`. Builds the ``BA/BB/B0/BD`` frames that sync time, weight
+and profile so the scale shows body-composition on its own screen.
 
-This is the counterpart of :mod:`sacoma.protocol` (which decodes Scale -> App).
-It builds the 20-byte command frames the phone app sends to the scale so the
-scale enters "connected" mode, syncs time/weight, and shows body-composition on
-its own screen. (The scale computes the displayed values itself from the
-impedance it measures plus this sync data — the app never transmits computed
-body-composition; verified byte-for-byte against device captures.)
+See ``docs/protocol.md`` for the full wire spec. Frame layout and checksum are
+shared with the decode side: ``checksum = sum(frame[3:19]) & 0x1F``.
 
-Frame format (same as the decode side)::
-
-    [0]   sequence counter (0..255, wraps)
-    [1]   total payload length
-    [2]   fragment index (0,1,...)
-    [3..18] payload chunk, zero-padded to 16 bytes
-    [19]  checksum  ==  sum(frame[3:19]) & 0x1F     <-- 5-bit additive
-
-Validated against 153/153 frames (both directions) from the device captures.
-
-Commands (General scale protocol, FFB1):
-
-* ``0xBA`` user/weight sync   — time + stabilized weight (the periodic heartbeat)
-* ``0xBB`` user list sync     — two 8-byte user records
-* ``0xB0`` reply / ack        — ``[reply_package_index][state]``
-* ``0xBD`` other command      — ``[sub_cmd]`` (e.g. 0x09)
-
-NOTE on constants: a handful of payload bytes (``BA_TOKEN``, ``BB_RECORD2``,
-``0x00 0x78``, ``0x9E``, ``0x0F``) are stable across every capture for this
-device/user but their derivation from the user profile is not yet reversed.
-They are kept here as observed protocol constants so the frames are byte-exact;
-swap them out once the derivation is known.
+The ``BA_TOKEN``/``BB_RECORD2``/``BA_MID``/``BA_SEP``/``BA_TAIL`` constants are
+stable across every capture for the test device; their derivation from the
+profile is not yet reversed, so they are kept verbatim to stay byte-exact.
 """
 from __future__ import annotations
 
@@ -82,8 +61,8 @@ def build_frames(sequence: int, payload: bytes) -> List[bytes]:
 
 
 def _weight_field(weight_kg: float, *, stabilized: bool = True) -> bytes:
-    """2-byte weight: ``round(kg*100)`` big-endian, with the stabilized high bit."""
-    raw = int(round(weight_kg * 100.0)) & 0x3FFF
+    """2-byte weight: ``round(kg*100)`` (15-bit) big-endian, bit 15 = stabilized."""
+    raw = int(round(weight_kg * 100.0)) & 0x7FFF
     if stabilized:
         raw |= STABILIZED_FLAG
     return struct.pack(">H", raw)
