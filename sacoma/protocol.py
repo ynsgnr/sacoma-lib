@@ -13,9 +13,18 @@ payload chunks until ``length`` bytes are collected.
 
 Reassembled message payloads, by ``type`` (payload byte 0):
 
-* ``0xA2`` real-time weight stream      — weight, big-endian, grams.
+* ``0xA2`` real-time weight stream      — ``[type][state][0x19][00][weight u16 BE g][00]``.
 * ``0xA3`` BIA result                   — weight + **10 segmental impedances**.
 * ``0xA1`` / ``0xA0`` status / counters — ignored.
+
+A2 layout::
+
+    [0]   type 0xA2
+    [1]   state   0x01 live / 0x03 stabilized
+    [2]   marker  0x19
+    [3]   0x00
+    [4-5] weight  uint16 big-endian -> /1000 = kg
+    [6]   0x00
 
 A3 result layout::
 
@@ -45,8 +54,6 @@ TYPE_COUNTER = 0xA0
 TYPE_STATUS = 0xA1
 TYPE_WEIGHT = 0xA2
 TYPE_RESULT = 0xA3
-
-WEIGHT_MASK = 0x3FFFF  # weight is an 18-bit field in the A2 stream
 
 
 # --- ez-packet structure of the reassembled A3 result (documentation + parser) ----------
@@ -78,9 +85,18 @@ class Frame:
         return cls(data[0], data[1], data[2], bytes(data[3:19]), data[19])
 
 
-def additive_checksum(body: bytes) -> int:
-    """Trailing check byte used by the FFB1 command envelope: ``sum(body[2:8]) & 0xFF``."""
-    return sum(body[2:8]) & 0xFF
+def frame_checksum(frame: bytes) -> int:
+    """The trailing check byte of a 20-byte frame: ``sum(frame[3:19]) & 0x1F``.
+
+    A 5-bit additive checksum over the 16 payload bytes. Validated against
+    153/153 captured frames in both directions.
+    """
+    return sum(frame[3:19]) & 0x1F
+
+
+def frame_is_valid(frame: bytes) -> bool:
+    """True if a 20-byte frame's trailing checksum matches."""
+    return len(frame) == FRAME_LEN and frame[19] == frame_checksum(frame)
 
 
 class FrameAssembler:
@@ -119,10 +135,11 @@ def decode_message(payload: bytes) -> Optional[Measurement]:
     mtype = payload[0]
 
     if mtype == TYPE_WEIGHT:
-        # [type][state][marker][00][weight 18-bit BE, grams ...]
-        weight_g = int.from_bytes(payload[4:7], "big") & WEIGHT_MASK
+        # [type][state][marker 0x19][00][weight u16 BE, grams][00]
+        # state: 0x01 = live/streaming, 0x03 = locked/stabilized (0x02 also seen).
+        weight_g = int.from_bytes(payload[4:6], "big")
         return Measurement(weight_kg=weight_g / 1000.0, impedances_ohm=[],
-                           is_stabilized=(payload[1] == 0x02))
+                           is_stabilized=payload[1] in (0x02, 0x03))
 
     if mtype == TYPE_RESULT:
         return decode_a3_result(payload)

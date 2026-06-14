@@ -19,7 +19,15 @@ from .models import (
     Unit,
     UserProfile,
 )
-from .protocol import FrameAssembler, decode_a3_result, decode_frame, decode_message
+from .protocol import (
+    FrameAssembler,
+    decode_a3_result,
+    decode_frame,
+    decode_message,
+    frame_checksum,
+    frame_is_valid,
+)
+from . import encoder
 
 __all__ = [
     "UserProfile",
@@ -34,6 +42,9 @@ __all__ = [
     "decode_frame",
     "decode_message",
     "decode_a3_result",
+    "frame_checksum",
+    "frame_is_valid",
+    "encoder",
 ]
 
 __version__ = "0.1.0"
