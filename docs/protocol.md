@@ -90,5 +90,18 @@ The phone never transmits computed body-composition to the scale. Comparing the 
 writes immediately before and after the app computes a result, the payloads are
 **byte-identical except the timestamp and weight**. The scale computes its own 6 displayed
 values (fat %, BMI, muscle mass, water %, body age, bone mass) on-device from the impedance it
-measured plus the profile/weight synced over `BA`/`BB`. This is why the scale shows only weight
-with no phone connected: it has no profile to compute from.
+measured plus the profile/weight synced over `BA`/`BB`.
+
+## Unlocking the scale's display
+
+The scale shows `--` for the 6 values until it sees a **live, synced app** — a *sustained*
+handshake, not a one-shot burst. Confirmed on real hardware: replaying a single
+`B0/BA/BB/BD` does nothing, but keeping the dialog alive makes the numbers appear ~0.5 s later:
+
+* a continuous `BA` heartbeat (~0.4 s) carrying the current weight,
+* a one-time `BB` + `BD` user sync,
+* a `B0` ack of each incoming `A0`/`A3` control frame (the `B0` reply index increments per ack).
+
+`scripts/ble_test.py --drive` (the `Driver` class) implements exactly this and drives the
+scale end-to-end. So the library *drives* the scale by sustaining the sync; it cannot push
+arbitrary numbers — the scale always displays what it computes itself.
