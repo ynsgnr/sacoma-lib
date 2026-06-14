@@ -18,10 +18,14 @@ own BLE stack; feed it bytes and it returns values.
 
 ## Install
 
+The distribution is **`sacoma-lib`**; the import package is **`sacoma`**.
+
 ```bash
-pip install -e .            # library (pulls ezpacket from PyPI)
-pip install -e ".[dev]"     # + pytest/ruff for development
-pip install -e ".[ble]"     # + bleak, only for the example runner
+pip install sacoma-lib        # from PyPI
+
+pip install -e .              # from a checkout (pulls ezpacket from PyPI)
+pip install -e ".[dev]"       # + pytest/ruff/build/twine for development
+pip install -e ".[ble]"       # + bleak, only for the example runner
 ```
 
 ## Usage

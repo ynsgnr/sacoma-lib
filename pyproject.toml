@@ -3,23 +3,44 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sacoma"
+name = "sacoma-lib"
 version = "0.1.0"
 description = "Decode/encode BLE packets for the SACOMA Ultra (ICOMON/Fitdays) 8-electrode body-composition scale, and compute body composition (WLA25)."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Yunus Gungor" }]
+keywords = ["sacoma", "icomon", "fitdays", "scale", "bia", "body-composition",
+            "ble", "bluetooth", "home-assistant"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Home Automation",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "ezpacket==0.0.6",
 ]
 
 [project.optional-dependencies]
 ble = ["bleak>=0.21"]            # only for the example runner script
-dev = ["pytest>=7", "ruff>=0.4"]
+dev = ["pytest>=7", "ruff>=0.4", "build>=1", "twine>=5"]
+
+[project.urls]
+Homepage = "https://github.com/ynsgnr/sacoma-lib"
+Repository = "https://github.com/ynsgnr/sacoma-lib"
+Issues = "https://github.com/ynsgnr/sacoma-lib/issues"
 
 [tool.setuptools.packages.find]
-include = ["sacoma*"]
+include = ["sacoma*"]            # distribution "sacoma-lib", import package "sacoma"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
