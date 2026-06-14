@@ -10,11 +10,9 @@ A small, focused Python library for the **SACOMA Ultra** 8-electrode body-compos
 The library performs **no I/O** — it never touches Bluetooth, files, or the network. Bring your
 own BLE stack; feed it bytes and it returns values.
 
-## Status
-
-- ✅ Frame reassembly + decoding — A2 weight stream and A3 result (weight + 10 segmental impedances).
-- ✅ Body-composition algorithm (`WLA25`) — bit-exact pure-Python port (`sacoma/wla25.py`).
-- ✅ Command encoding (values → bytes) — `BA/BB/B0/BD` FFB1 frames (`sacoma/encoder.py`).
+> **Beta.** Reverse-engineered from device captures and validated end-to-end on real
+> hardware — decode, encode, and the body-composition algorithm all work fine for now.
+> APIs may still change.
 
 ## Install
 
