@@ -13,25 +13,25 @@ payload chunks until ``length`` bytes are collected.
 
 Reassembled message payloads, by ``type`` (payload byte 0):
 
-* ``0xA2`` real-time weight stream      — ``[type][state][0x19][00][weight u16 BE g][00]``.
+* ``0xA2`` real-time weight stream      — ``[type][state][0x19][weight u24 BE g][00]``.
 * ``0xA3`` BIA result                   — weight + **10 segmental impedances**.
 * ``0xA1`` / ``0xA0`` status / counters — ignored.
+
+Weight is a **3-byte** (u24) field in both: a 16-bit field overflows past 65.535 kg.
 
 A2 layout::
 
     [0]   type 0xA2
     [1]   state   0x01 live / 0x03 stabilized
     [2]   marker  0x19
-    [3]   0x00
-    [4-5] weight  uint16 big-endian -> /1000 = kg
+    [3-5] weight  uint24 big-endian -> /1000 = kg
     [6]   0x00
 
 A3 result layout::
 
     [0]    type 0xA3
     [1]    marker 0x19
-    [2]    0x00
-    [3-4]  weight   uint16 big-endian -> /1000 = kg
+    [2-4]  weight   uint24 big-endian -> /1000 = kg
     [5]    0x00
     [6..]  imp1..imp10  uint16 big-endian each -> /10 = ohms
     [..]   trailing 0x00 padding
@@ -41,7 +41,7 @@ All multi-byte fields are big-endian (ez-packet's default).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from ezpacket import Packet, Section
 
@@ -62,8 +62,7 @@ def a3_result_packet() -> Packet:
     sections = [
         Section.Template(1),   # type (0xA3)
         Section.Template(1),   # marker (0x19)
-        Section.Template(1),   # 0x00
-        Section.Template(2),   # weight (grams)
+        Section.Template(3),   # weight (u24 BE, grams) — 16 bits overflow past 65.535 kg
         Section.Template(1),   # 0x00
     ]
     sections += [Section.Template(2) for _ in range(NUM_IMPEDANCES)]  # imp1..imp10
@@ -102,29 +101,38 @@ def frame_is_valid(frame: bytes) -> bool:
 class FrameAssembler:
     """Stitches the scale's fragmented BLE notification frames back into whole messages.
 
-    A long result message is split across several 20-byte frames, each carrying a
-    ``[seq][len][frag]`` header. Feed every received frame; the payload chunks are buffered
-    per sequence and concatenated until ``length`` bytes have arrived, at which point the
-    complete message payload is returned.
+    Reassembly can't key on the sequence byte: the A3 result's two fragments are
+    sent with *different* (and inconsistent) sequence numbers. Instead we use the
+    one reliable discriminator — a ``fragment 0`` whose ``length`` fits in a single
+    frame (<= 16 payload bytes) is a complete message (A0 counter, A1 status, A2
+    weight) and is returned immediately, while ``length > 16`` starts a
+    multi-fragment message (the A3 result). Continuation fragments append to that
+    in-flight buffer regardless of their sequence. Because single-frame messages
+    never touch the buffer, an interleaved A0/A1 can't corrupt an in-flight result.
+    One assembler per notify characteristic.
     """
 
     def __init__(self) -> None:
-        self._buf: Dict[int, bytearray] = {}
-        self._len: Dict[int, int] = {}
+        self._buf = bytearray()
+        self._need = 0
+        self._building = False
 
     def add_frame(self, data: bytes) -> Optional[bytes]:
-        """Add one raw frame; return the assembled message payload when complete, else ``None``."""
+        """Add one raw frame; return the assembled payload when complete, else ``None``."""
         frame = Frame.parse(data)
         if frame.fragment == 0:
-            self._buf[frame.sequence] = bytearray(frame.payload)
-            self._len[frame.sequence] = frame.length
+            if frame.length <= len(frame.payload):
+                return bytes(frame.payload[:frame.length])     # complete single-frame message
+            self._buf = bytearray(frame.payload)               # start of a multi-fragment message
+            self._need = frame.length
+            self._building = True
+        elif self._building:
+            self._buf.extend(frame.payload)
         else:
-            self._buf.setdefault(frame.sequence, bytearray()).extend(frame.payload)
-        total = self._len.get(frame.sequence, frame.length)
-        if len(self._buf.get(frame.sequence, b"")) >= total:
-            payload = bytes(self._buf.pop(frame.sequence)[:total])
-            self._len.pop(frame.sequence, None)
-            return payload
+            return None                                        # stray continuation
+        if self._building and len(self._buf) >= self._need:
+            self._building = False
+            return bytes(self._buf[:self._need])
         return None
 
 
@@ -151,13 +159,13 @@ def decode_message(payload: bytes) -> Optional[Measurement]:
 def decode_a3_result(payload: bytes) -> Measurement:
     """Decode an A3 result payload using the ez-packet structure.
 
-    Section indices: 0=type, 1=marker, 2=pad, 3=weight, 4=pad, 5..14=imp1..imp10.
+    Section indices: 0=type, 1=marker, 2=weight(u24), 3=pad, 4..13=imp1..imp10.
     """
     pkt = a3_result_packet()
     size = pkt.byte_size()
     pkt.decode(bytes(payload).ljust(size, b"\x00")[:size])
-    weight_g = pkt[3].value                            # big-endian u16
-    impedances: List[float] = [pkt[5 + i].value / 10.0 for i in range(NUM_IMPEDANCES)]
+    weight_g = pkt[2].value                            # big-endian u24, grams
+    impedances: List[float] = [pkt[4 + i].value / 10.0 for i in range(NUM_IMPEDANCES)]
     return Measurement(weight_kg=weight_g / 1000.0, impedances_ohm=impedances)
 
 

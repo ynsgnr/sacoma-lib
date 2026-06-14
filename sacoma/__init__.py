@@ -28,7 +28,8 @@ from .protocol import (
     frame_is_valid,
 )
 from . import encoder
-from .calculations import (compute)
+from .calculations import compute
+from .session import Received, Session
 
 __all__ = [
     "UserProfile",
@@ -46,6 +47,9 @@ __all__ = [
     "frame_checksum",
     "frame_is_valid",
     "encoder",
+    "compute",
+    "Session",
+    "Received",
 ]
 
 __version__ = "0.1.0"
