@@ -28,6 +28,7 @@ from .protocol import (
     frame_is_valid,
 )
 from . import encoder
+from .calculations import (compute)
 
 __all__ = [
     "UserProfile",

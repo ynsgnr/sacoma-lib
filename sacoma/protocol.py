@@ -135,9 +135,10 @@ def decode_message(payload: bytes) -> Optional[Measurement]:
     mtype = payload[0]
 
     if mtype == TYPE_WEIGHT:
-        # [type][state][marker 0x19][00][weight u16 BE, grams][00]
+        # [type][state][marker 0x19][weight u24 BE, grams][00]
+        # weight is 3 bytes: a 16-bit field overflows past 65.535 kg.
         # state: 0x01 = live/streaming, 0x03 = locked/stabilized (0x02 also seen).
-        weight_g = int.from_bytes(payload[4:6], "big")
+        weight_g = int.from_bytes(payload[3:6], "big")
         return Measurement(weight_kg=weight_g / 1000.0, impedances_ohm=[],
                            is_stabilized=payload[1] in (0x02, 0x03))
 
